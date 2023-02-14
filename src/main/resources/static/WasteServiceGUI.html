@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BCR GUI</title>
+</head>
+<body>
+    <div style="position:relative">
+        Insert Server Address: <input id="server_input" type="text"><br>
+        Insert WS Name: <input id="WS_name_input" type="text"><br>
+        <button type="button" onclick="readInput()">Connect</button>
+    </div>
+    <div id="drawing_area" style="position:relative">
+        <canvas style="position:absolute; z-index: 1;" id="service_area"></canvas>
+        <img id="TTsprite" src="./img/TTsprite.jpg" style="position: absolute; z-index: 20; top: 70px; left: 70px;">
+    </div>
+</body>
+
+<script type="text/javascript">
+    var hostname = ""
+    var socket
+    var WSName = ""
+
+    function readInput(){
+        hostname = document.getElementById("server_input").value
+        socket = new WebSocket("wss://" + hostname + "/socket")
+        WSName = document.getElementById("WS_name_input").value
+    }
+
+    var M = 0
+    var N = 0
+    var squareDim = 70
+    var garbages;
+    var home = [];
+    var loadArea = [];
+    var TTPos = []
+    var mapped = false
+
+    socket.onopen = function(e){
+        console.log("[  wss ][OPEN] Connection open with " + hostname)
+    }
+
+    socket.onmessage = function(e){
+        var message = JSON.parse(e.data)
+
+        // richiesta di identificazione
+        if( message.type === "identificationRequest"){
+            var identificationMessage = {
+                sender : "GUI 1",
+                senderIdentity : "GUI",
+                type : "identification"
+            }
+            var mappingMessage = {
+                sender : "GUI 1",
+                senderIdentity : "GUI",
+                type : "mappingRequest",
+                mappingRequested : WSName
+            }
+
+            socket.send(JSON.stringify(identificationMessage))
+            socket.send(JSON.stringify(mappingMessage))
+
+        }else if( message.type === "mapping"){
+            // queste sono info che vanno sempre aggiornate
+            TTPos = message.TTpos.coords
+            for(garbage of message.garbageTypes){
+                garbages[garbage.name] = garbage.properties
+            }
+
+            // queste info vanno aggiornate solo al primo mapping
+            if(!mapped){
+                N = message.roomDimensions.N
+                M = message.roomDimensions.M
+
+                home = message.home.coords
+                loadArea = message.loadArea.coords
+
+                mapped = true
+
+                drawGrid()
+                addLegend()
+            }
+
+            updateInfo();
+
+        }else if( message.type === "WSNotFound"){
+            console.log("WS Not Found")
+        }
+
+    }
+
+    function updateInfo(){
+        var img = document.getElementById("TTsprite");
+        img.top = TTPos.y*squareDim + "px";
+        img.left = TTPos.x*squareDim + "px";
+    }
+
+    function fillInGrid(ctx, iterable){
+        for(point of iterable){
+            ctx.fillRect(
+                point.x * squareDim,
+                point.y * squareDim,
+                squareDim,
+                squareDim
+            )
+        }
+    }
+
+    function drawGrid(){
+        var canva = document.getElementById("service_area")
+    
+        canva.width     =   squareDim*M
+        canva.height    =   squareDim*N
+    
+        var ctx = canva.getContext("2d")
+    
+        
+        ctx.fillStyle = "green"
+        fillInGrid(ctx, home.coords)
+        
+        ctx.fillStyle = "gray"
+        fillInGrid(ctx, load_area.coords)
+
+        for(garbage in garbages){
+            ctx.fillStyle = '#'+(0x1000000+Math.random()*0xffffff).toString(16).substr(1,6)
+            garbage.color = ctx.fillStyle
+            fillInGrid(ctx, garbage.coords)
+        }
+        
+        for(i=0; i<=M; i++){
+            ctx.moveTo(squareDim*i, 0)
+            ctx.lineTo(squareDim*i, squareDim*N)
+            ctx.stroke()
+        }
+        
+        for(j=0; j<=N; j++){
+            ctx.moveTo(0, squareDim*j)
+            ctx.lineTo(squareDim*M, squareDim*j)
+            ctx.stroke()
+        }
+    }
+
+    function addLegend(){
+        var area = document.getElementById("drawing_area")
+
+        for(garbage in garbages){
+            area.insertAdjacentHTML("afterend", "<div>\
+                <div style='float:left; height:20px; width:20px; border: 1pc solid black; clear:both; background-color:"+garbage.color+"'>"+garbage.name+"</div>\
+                </div>")
+        }
+    }
+
+
+    
+</script>
+</html>

@@ -1,0 +1,80 @@
+DA SERVER A WS
+{
+    sender          :   "nome del server",
+    senderIdentity  :   "SERVER",
+    type            :   "mappingRequest"
+}
+
+DA SERVER A GUI
+{
+    sender          :   "nome del server",
+    senderIdentity  :   "SERVER",
+    type            :   "WSNotFound"
+}
+
+DA SERVER A XXX
+{
+    sender          :   "nome server",
+    senderIdentity  :   "SERVER",
+    type            :   "identificationRequest"
+}
+
+DA WS A SERVER
+DA SERVER A GUI
+{
+    sender          :   "nome WS",
+    senderIdentity  :   "WS",
+    type            :   "mapping",
+    roomDimensions  :   [
+                            M   :   m,
+                            N   :   n
+                        ],
+    home            :   {
+                            coords  :   [
+                                            {X:x, Y:y},
+                                            {X:x, Y:y}
+                                        ]
+                        },
+    loadArea        :   {
+                            coords  :   [
+                                            {X:x, Y:y},
+                                            {X:x, Y:y}
+                                        ]
+                        },
+    TTpos           :   {
+                            coords  :   [
+                                            {X:x, Y:y},
+                                            {X:x, Y:y}
+                                        ]
+                        },
+    garbageTypes    :   [
+                            {
+                                name        :   "nome del rifiuto",
+                                properties  :   {
+                                                    coords      :   [
+                                                                        {X:x, Y:y},
+                                                                        {X:x, Y:y}
+                                                                    ],
+                                                    capacity    :   {
+                                                                        Max     :   max,
+                                                                        Curr    :   curr,
+                                                                    }
+                                                }
+                            },
+                        ]
+}
+
+DA XXX A SERVER
+{
+    sender          :   "nome mittente",
+    senderIdentity  :   "WS"    |   "GUI"
+    type            :   "identification"
+}
+
+DA GUI A SERVER
+{
+    sender              :   "nome GUI",
+    senderIdentity      :   "GUI",
+    type                :   "mappingRequest"
+    mappingRequested    :   "nome WS"
+}
